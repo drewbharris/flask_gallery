@@ -1,0 +1,33 @@
+<!doctype html>
+<title>photo gallery {% if session.title %} | {{ session.title }} {% endif %}</title>
+<link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
+<body>
+
+<div class=page>
+	<div class=page_title>
+		<span class=heading>photo gallery</span>
+		<span class=username>drewbharris</span>
+	</div>
+	<div class=nav>
+		&nbsp;&nbsp;&nbsp;
+		{% if not session.logged_in %}
+		<a href="{{ url_for('login') }}">log in</a>
+		{% else %}
+		<a href="{{ url_for('upload') }}">upload</a>
+		&nbsp;&nbsp;&nbsp;
+		<a href="{{ url_for('logout') }}">log out</a>
+		{% endif %}
+		&nbsp;&nbsp;&nbsp;
+		<a href="http://drewbharris.com">drewbharris.com</a>
+		
+	</div>
+	{% for message in get_flashed_messages() %}
+		<div class=flash>{{ message }}</div>
+	{% endfor %}
+	
+	{% block body %}{% endblock %}
+	
+</div>
+
+</body>
+

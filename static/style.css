@@ -1,0 +1,94 @@
+a:link
+{
+	color:red;
+	text-decoration:none;
+}
+a:visited
+{
+	color:red;
+	text-decoration:none;
+}
+a:active
+{
+	color:red;
+	text-decoration:none;
+}
+a:hover
+{
+	background-color:red;
+	color:white;
+	text-decoration:none;
+}
+
+html, body {
+height:100%;
+}
+
+.container {
+background-color:black;
+}
+
+.page {
+width: 750px;
+margin: 0 auto;
+background-color:white;
+}
+
+.page_title {
+text-align:center;
+}
+
+.nav {
+width: 750px;
+margin: 0 auto;
+text-align: right;
+padding-bottom:8px;
+margin-bottom:10px;
+border-bottom: 1px dashed black;
+}
+
+.heading {
+font-size:4em;
+}
+
+.username {
+font-size:1.5em;
+}
+
+.gallery_list {
+width: 200px;
+margin: 0 auto;
+}
+
+.flash {
+color: red;
+text-align:left;
+font-size:0.8em;
+}
+
+.created {
+font-size:0.8em;
+padding-left:10px;
+padding-bottom:5px;
+}
+
+.gallery_title {
+font-size:3em;
+text-align:center;
+}
+
+.gallery_date {
+text-align:center;
+}
+
+.photostream {
+width:700px;
+margin:0 auto;
+padding-top:10px;
+}
+
+.photo {
+padding-bottom:5px;
+}
+
+

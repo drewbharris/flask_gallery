@@ -1,0 +1,26 @@
+{% extends "layout.html" %}
+{% block body %}
+
+<div class=gallery_title>{{ gallery_name }}</div>
+<div class=gallery_date>
+	{% for d in date %}
+		created {{ d.creation_date }}
+	{% endfor %}
+	<br>
+	{% if session.logged_in %}
+		<a href="{{ url_for('delete_gallery', gallery_name=gallery_name) }}">delete gallery</a>
+	{% endif %}
+</div>
+
+<div class=photostream>
+	{% for photo in photos %}
+		<div class=photo>
+			<a href="{{ url_for('static', filename='gallery/'+gallery_name+'/'+photo.file_name+'.jpg') }}">
+				<img src="{{ url_for('static', filename='gallery/'+gallery_name+'/thumbs/'+photo.file_name+'_small.jpg') }}">
+			</a>	
+		</div>
+	{% endfor %}
+</div>
+
+{% endblock %}
+
