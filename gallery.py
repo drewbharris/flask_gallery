@@ -29,7 +29,7 @@ def index():
 @app.route('/gallery/<gallery_name>')
 def gallery(gallery_name):
 	session['title'] = gallery_name
-	photos = Photo.query.filter_by(gallery_name = gallery_name).all()
+	photos = Photo.query.filter_by(gallery_name = gallery_name).order_by(Photo.file_name.desc()).all()
 	date = Gallery.query.filter_by(gallery_name = gallery_name).first().creation_date
 	if photos == None:
 		flash("Could not find specified gallery.")
@@ -114,7 +114,7 @@ class User(db.Model):
 class Gallery(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
 	gallery_name = db.Column(db.String(80), unique=True)
-	creation_date = db.Column(db.String(120), unique=True)
+	creation_date = db.Column(db.String(120))
 
 	def __init__(self, gallery_name, creation_date):
 		self.gallery_name = gallery_name
@@ -125,7 +125,7 @@ class Gallery(db.Model):
 		
 class Photo(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
-	file_name = db.Column(db.String(80), unique=True)
+	file_name = db.Column(db.String(80))
 	gallery_name = db.Column(db.String(80))
 	upload_date = db.Column(db.String(120))
 
@@ -176,11 +176,15 @@ def unpack_photos(zip_filename, gallery_name):
 
 	#set the thumbnail bounds
 	size = 700, 2000
+	album_thumb_size = 100, 500
 	
 	#get the upload date
 	todays_date = date.today().strftime("%d.%m.%Y")
 	
 	#for each file extracted from the zip, generate a thumbnail, save it and insert the entry into the database
+	first_photo = extracted_files[0]
+	generate_album_thumbnail(dest_dir, first_photo, album_thumb_size)
+	
 	for imagePath in extracted_files:
 		
 		#split filename from extension
@@ -208,6 +212,16 @@ def generate_thumbnail(path, imagePath, size):
 	dest_path = path+'/thumbs/'+filename+'_small.jpg'
 	dest_path = dest_path.encode('ascii')
 	image.save(dest_path)
+	
+def generate_album_thumbnail(path, imagePath, size):
+		
+	#open the image, create the thumbnail and save it
+	image=Image.open(imagePath)
+	image.thumbnail(size, Image.ANTIALIAS)
+	dest_path = path+'/thumbs/album_thumbnail.jpg'
+	dest_path = dest_path.encode('ascii')
+	image.save(dest_path)
+	
 
 	
 #SYSTEM FUNCTIONS

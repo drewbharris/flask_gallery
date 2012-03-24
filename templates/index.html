@@ -3,7 +3,19 @@
 <div class=gallery_list>
 {% if galleries %}
 	{% for gallery in galleries %}
-		<span class=username><a href="{{ url_for('gallery', gallery_name=gallery.gallery_name) }}">{{ gallery.gallery_name }}</a></span><div class=created>(created {{ gallery.creation_date }})</div>
+		<div class=gallery_list_container>
+			<div class=gallery_list_thumbnail>
+				<img src="{{ url_for('static', filename='gallery/'+gallery.gallery_name+'/thumbs/album_thumbnail.jpg') }}">
+			</div>
+			<div class=gallery_list_info>
+				<span class=username>
+					<a href="{{ url_for('gallery', gallery_name=gallery.gallery_name) }}">{{ gallery.gallery_name }}</a>
+				</span>
+				<div class=created>
+					(created {{ gallery.creation_date }})
+				</div>
+			</div>
+		</div>
 	{% endfor %}
 {% endif %}
 
