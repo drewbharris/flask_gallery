@@ -29,7 +29,7 @@ def index():
 @app.route('/gallery/<gallery_name>')
 def gallery(gallery_name):
 	session['title'] = gallery_name
-	photos = Photo.query.filter_by(gallery_name = gallery_name).order_by(Photo.file_name.desc()).all()
+	photos = Photo.query.filter_by(gallery_name = gallery_name).order_by(Photo.file_name.asc()).all()
 	date = Gallery.query.filter_by(gallery_name = gallery_name).first().creation_date
 	if photos == None:
 		flash("Could not find specified gallery.")
@@ -43,16 +43,22 @@ def upload():
 	if session['logged_in']:
 		if request.method == 'POST':
 			f = request.files['photos']
-			gallery_name = request.form['gallery_name']
+			if request.form['gallery'] == 'new_gallery':
+				gallery_name = request.form['new_gallery_name']
+			else:
+				gallery_name = request.form['gallery']
+				print request.form['gallery']
 			if not Gallery.query.filter_by(gallery_name=gallery_name).first():
 				todays_date = date.today().strftime("%d.%m.%Y")
 				db.session.add(Gallery(gallery_name, todays_date))
 			zip_filename = os.path.join(selected_config.BASE_DIR,'temp/',secure_filename(f.filename))
 			f.save(zip_filename)
+			print gallery_name
 			unpack_photos(zip_filename, gallery_name)
 			return redirect(url_for('index'))
 		else:
-			return render_template('upload.html')
+			galleries = Gallery.query.all()
+			return render_template('upload.html', galleries=galleries)
 	else:
 		return redirect(url_for('login'))
 		
@@ -142,9 +148,8 @@ class Photo(db.Model):
 #
 
 def valid_login(username, raw_password):
-	password = hashlib.sha224(raw_password).hexdigest()
 	#try the login against the set username and password
-	user = User.query.filter_by(username=username, hashed_password=password).first()
+	user = User.query.filter_by(username=username, hashed_password=hash_password(raw_password)).first()
 	if (user):
 		return True
 	else:
@@ -156,9 +161,11 @@ def unpack_photos(zip_filename, gallery_name):
 	dest_dir = dest_dir.encode('ascii')
 
 	#create the output directory and thumbnails directory
-	os.makedirs(dest_dir)
+	if not os.path.exists(dest_dir):
+		os.makedirs(dest_dir)
 	os.chmod(dest_dir, 0777)
-	os.makedirs(os.path.join(dest_dir,'thumbs'))
+	if not os.path.exists(os.path.join(dest_dir,'thumbs')):
+		os.makedirs(os.path.join(dest_dir,'thumbs'))
 	os.chmod(os.path.join(dest_dir,'thumbs'),0777)
 	
 	#use OS unzip command to unzip all .jpg files from the source zipfile to the destination
@@ -191,13 +198,13 @@ def unpack_photos(zip_filename, gallery_name):
 		imageFile = os.path.basename(imagePath)
 		file_name, ext = os.path.splitext(imageFile)
 		
-		if not Photo.query.filter_by(file_name = file_name, gallery_name=gallery_name, upload_date=todays_date).first():
+		if not Photo.query.filter_by(file_name = file_name, gallery_name=gallery_name).first():
 			#if the photo doesn't already exist, in the db, make a thumbnail, save it and add the photo to the db
 			generate_thumbnail(dest_dir, imagePath, size)
 			db.session.add(Photo(file_name, gallery_name, todays_date))
 			db.session.commit()
 		else:
-			flash('duplicate file '+file_name+' detected in current gallery, skipping')
+			flash('duplicate filename '+file_name+' detected in current gallery, skipping')
 
 	
 def generate_thumbnail(path, imagePath, size):
@@ -222,6 +229,8 @@ def generate_album_thumbnail(path, imagePath, size):
 	dest_path = dest_path.encode('ascii')
 	image.save(dest_path)
 	
+def hash_password(raw_password):
+	return hashlib.sha224(raw_password).hexdigest()
 
 	
 #SYSTEM FUNCTIONS
