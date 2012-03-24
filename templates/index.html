@@ -1,8 +1,11 @@
 {% extends "layout.html" %}
 {% block body %}
 <div class=gallery_list>
-{% for gallery in galleries %}
-	<span class=username><a href="{{ url_for('gallery', gallery_name=gallery.gallery_name) }}">{{ gallery.gallery_name }}</a></span><div class=created>(created {{ gallery.creation_date }})</div>
-{% endfor %}
+{% if galleries %}
+	{% for gallery in galleries %}
+		<span class=username><a href="{{ url_for('gallery', gallery_name=gallery.gallery_name) }}">{{ gallery.gallery_name }}</a></span><div class=created>(created {{ gallery.creation_date }})</div>
+	{% endfor %}
+{% endif %}
+
 </div>
 {% endblock %}

@@ -3,9 +3,7 @@
 
 <div class=gallery_title>{{ gallery_name }}</div>
 <div class=gallery_date>
-	{% for d in date %}
-		created {{ d.creation_date }}
-	{% endfor %}
+	created {{ date }}
 	<br>
 	{% if session.logged_in %}
 		<a href="{{ url_for('delete_gallery', gallery_name=gallery_name) }}">delete gallery</a>
