@@ -1,0 +1,5 @@
+*.sql
+*.db
+*.pyc
+*.jpg
+config.py
