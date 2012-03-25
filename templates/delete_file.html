@@ -1,0 +1,12 @@
+{% extends "layout.html" %}
+{% block body %}
+
+<div class=gallery_title>delete photo</div>
+<div class=delete_photo>
+	<img src="{{ url_for('static', filename='gallery/'+gallery_name+'/thumbs/'+file_name+'_small.jpg') }}" width=400><br/>
+	are you sure you want to delete image <span class=text_red>{{ file_name }}</span> from gallery <span class=text_red>{{ gallery_name }}</span>?
+	<form action="" method="post">
+		<p><input type="submit" name="delete" value="cancel"><input type="submit" name="delete" value="delete"></p>
+	</form>
+</div>
+{% endblock %}

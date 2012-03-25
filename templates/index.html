@@ -1,5 +1,6 @@
 {% extends "layout.html" %}
 {% block body %}
+<div class=gallery_title>galleries</div>
 <div class=gallery_list>
 {% if galleries %}
 	{% for gallery in galleries %}
@@ -17,6 +18,10 @@
 			</div>
 		</div>
 	{% endfor %}
+{% else %}
+	<div class=pagination>
+		&lt;none&gt;
+	</div>
 {% endif %}
 
 </div>

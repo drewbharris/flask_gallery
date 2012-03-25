@@ -12,13 +12,57 @@
 
 <div class=photostream>
 	{% for photo in photos %}
-		<div class=photo>
-			<a href="{{ url_for('static', filename='gallery/'+gallery_name+'/'+photo.file_name+'.jpg') }}">
+		<div class=photo id=photo_{{ photo.file_name }}>
+			<a class=fancybox href="#photo_info_{{ photo.file_name }}" >
 				<img src="{{ url_for('static', filename='gallery/'+gallery_name+'/thumbs/'+photo.file_name+'_small.jpg') }}">
-			</a>	
+			</a>
+		</div>
+		<div class=photo_info id=photo_info_{{ photo.file_name }}>
+			<div class=photo_info_image>
+				<img src="{{ url_for('static', filename='gallery/'+gallery_name+'/thumbs/'+photo.file_name+'_small.jpg') }}">
+			</div>
+			<div class=photo_info_text>
+				uploaded {{ photo.upload_date }}<br>
+				<div class=photo_info_useractions>
+					<a href="{{ url_for('static', filename='gallery/'+gallery_name+'/'+photo.file_name+'.jpg') }}">
+						click for full resolution
+					</a>
+					<br/>
+					{% if session.logged_in %}
+						{% if last %}
+							last photo in gallery, cannot delete
+						{% else %}
+							<a href="{{ url_for('delete_image', gallery_name=gallery_name, file_name=photo.file_name) }}">
+								delete
+							</a>
+						{% endif %}
+					{% endif %}
+				</div>
+				
+			</div>
 		</div>
 	{% endfor %}
+	<div class=pagination>
+		{% if prev %}
+			<a href="{{ url_for('gallery', gallery_name = gallery_name, page = page - 1 ) }}">&lt;&lt; prev</a>
+		{% endif %}
+		{% if prev and next %}
+			&nbsp;&nbsp;&nbsp;
+		{% endif %}
+		{% if next %}
+			<a href="{{ url_for('gallery', gallery_name = gallery_name, page = page + 1 ) }}">next &gt;&gt;</a>
+		{% endif %}
+	</div>
+	
 </div>
+
+<script type="text/javascript">
+	
+$(document).ready(function() {
+	$(".fancybox").fancybox();
+});
+	
+</script>
 
 {% endblock %}
 

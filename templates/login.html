@@ -1,8 +1,11 @@
 {% extends "layout.html" %}
 {% block body %}
-<form action="" method="post">
-	<p>username: <input type="text" name="username"></p>
-	<p>password: <input type="password" name="password"></p>
-	<p><input type="submit" value="login"></p>
-</form>
+<div class=gallery_title>login</div>
+<div class=photostream>
+	<form action="" method="post">
+		<p>username: <input type="text" name="username"></p>
+		<p>password: <input type="password" name="password"></p>
+		<div class=pagination><input type="submit" value="login"></div>
+	</form>
+</div>
 {% endblock %}

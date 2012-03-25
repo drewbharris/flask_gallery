@@ -26,28 +26,63 @@ def index():
 	galleries = Gallery.query.all()
 	return render_template('index.html', galleries=galleries)
 
-@app.route('/gallery/<gallery_name>')
-def gallery(gallery_name):
+@app.route('/gallery/<gallery_name>', defaults={'page': 1})
+@app.route('/gallery/<gallery_name>/<int:page>')
+def gallery(gallery_name, page):
 	session['title'] = gallery_name
 	photos = Photo.query.filter_by(gallery_name = gallery_name).order_by(Photo.file_name.asc()).all()
+	if len(photos) == 1:
+		last = True
+	else:
+		last = False
 	date = Gallery.query.filter_by(gallery_name = gallery_name).first().creation_date
+	paginated_photos = [photos[i:i+10] for i in range(0, len(photos), 10)]
+	try:
+		requested_photos = paginated_photos[page-1]
+	except IndexError:
+		flash('page not found')
+		return redirect(url_for('gallery', gallery_name=gallery_name))	
+	
+	pages = len(paginated_photos)
+	
+	next = None
+	prev = None
+	
+	if (pages > 1) and (page < pages):
+		next = True
+	if (pages > 1) and (page > 1):
+		prev = True
+			
+		
+
 	if photos == None:
 		flash("Could not find specified gallery.")
 		return redirect(url_for('index'))
-	return render_template('gallery.html', gallery_name=gallery_name, photos=photos, date=date)	
+	
+	return render_template('gallery.html', gallery_name=gallery_name, photos=requested_photos, date=date, page=page, next=next, prev=prev, last=last)	
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():
 	session['title'] = "upload"
 	#first find out if logged in
 	if session['logged_in']:
+		galleries = Gallery.query.all()
 		if request.method == 'POST':
 			f = request.files['photos']
+			if not f:
+				flash('please select a .zip file containing jpeg files')
+				return render_template('upload.html', galleries=galleries)
 			if request.form['gallery'] == 'new_gallery':
 				gallery_name = request.form['new_gallery_name']
+				if not gallery_name:
+					flash('please enter a name for the new gallery')
+					return render_template('upload.html', galleries=galleries)
 			else:
-				gallery_name = request.form['gallery']
-				print request.form['gallery']
+				if request.form['new_gallery_name']:
+					flash('please select either an existing new gallery or the \'new gallery\' option')
+					return render_template('upload.html', galleries=galleries)
+				else:
+					gallery_name = request.form['gallery']	
 			if not Gallery.query.filter_by(gallery_name=gallery_name).first():
 				todays_date = date.today().strftime("%d.%m.%Y")
 				db.session.add(Gallery(gallery_name, todays_date))
@@ -57,7 +92,6 @@ def upload():
 			unpack_photos(zip_filename, gallery_name)
 			return redirect(url_for('index'))
 		else:
-			galleries = Gallery.query.all()
 			return render_template('upload.html', galleries=galleries)
 	else:
 		return redirect(url_for('login'))
@@ -77,6 +111,26 @@ def delete_gallery(gallery_name):
 				return redirect(url_for('gallery', gallery_name=gallery_name))
 		else:
 			return render_template('delete_gallery.html', gallery_name=gallery_name)
+	else:
+		flash('you must be logged in to do that')
+		return redirect(url_for('login'))
+		
+@app.route('/gallery/<gallery_name>/<file_name>/delete', methods=['GET', 'POST'])
+def delete_image(gallery_name, file_name):
+	if session['logged_in']:
+		if request.method == 'POST':
+			if request.form['delete'] == 'delete':
+				Photo.query.filter_by(gallery_name=gallery_name, file_name=file_name).delete()
+				image_path = os.path.join(selected_config.BASE_DIR,'gallery/',gallery_name,file_name+'.jpg')
+				thumbnail_path = os.path.join(selected_config.BASE_DIR,'gallery/',gallery_name,'thumbs/'+file_name+'_small.jpg')
+				os.remove(image_path)
+				os.remove(thumbnail_path)
+				flash(file_name+' from '+gallery_name+' deleted.')
+				return redirect(url_for('gallery', gallery_name=gallery_name))
+			else:
+				return redirect(url_for('gallery', gallery_name=gallery_name))
+		else:
+			return render_template('delete_file.html', gallery_name=gallery_name, file_name=file_name)
 	else:
 		flash('you must be logged in to do that')
 		return redirect(url_for('login'))
@@ -169,7 +223,7 @@ def unpack_photos(zip_filename, gallery_name):
 	os.chmod(os.path.join(dest_dir,'thumbs'),0777)
 	
 	#use OS unzip command to unzip all .jpg files from the source zipfile to the destination
-	string = 'unzip '+zip_filename+' *.jpg -d '+dest_dir
+	string = 'unzip -n '+zip_filename+' *.jpg -d "'+dest_dir+'"'
 
 	subprocess.call(shlex.split(string))
 	
@@ -182,7 +236,7 @@ def unpack_photos(zip_filename, gallery_name):
 	extracted_files=glob.glob(path)
 
 	#set the thumbnail bounds
-	size = 700, 2000
+	size = 600, 2000
 	album_thumb_size = 100, 500
 	
 	#get the upload date
@@ -191,6 +245,8 @@ def unpack_photos(zip_filename, gallery_name):
 	#for each file extracted from the zip, generate a thumbnail, save it and insert the entry into the database
 	first_photo = extracted_files[0]
 	generate_album_thumbnail(dest_dir, first_photo, album_thumb_size)
+	
+	duplicates_detected = False
 	
 	for imagePath in extracted_files:
 		
@@ -204,7 +260,10 @@ def unpack_photos(zip_filename, gallery_name):
 			db.session.add(Photo(file_name, gallery_name, todays_date))
 			db.session.commit()
 		else:
-			flash('duplicate filename '+file_name+' detected in current gallery, skipping')
+			duplicates_detected = True
+	
+	if duplicates_detected:
+		flash('duplicate files were detected and were skipped')
 
 	
 def generate_thumbnail(path, imagePath, size):

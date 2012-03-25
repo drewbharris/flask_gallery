@@ -20,6 +20,10 @@ a:hover
 	text-decoration:none;
 }
 
+img {  
+border-style: none;
+}
+
 html, body {
 height:100%;
 }
@@ -56,8 +60,9 @@ font-size:1.5em;
 }
 
 .gallery_list {
-width: 240px;
+width: 340px;
 margin: 0 auto;
+margin-top: 10px;
 }
 
 .flash {
@@ -78,14 +83,15 @@ text-align:center;
 }
 
 .gallery_list_container {
-height:80px;
+height:100px;
 }
 .gallery_list_thumbnail {
 float:left;
+margin-right:10px;
 }
 
 .gallery_list_info {
-float:right;
+
 }
 
 .gallery_date {
@@ -93,13 +99,46 @@ text-align:center;
 }
 
 .photostream {
-width:700px;
+width:600px;
 margin:0 auto;
 padding-top:10px;
 }
 
-.photo {
-padding-bottom:5px;
+.delete_photo {
+width:600px;
+margin:0 auto;
+padding-top:10px;
+text-align:center;
 }
 
+.photo {
+padding-top:5px;
+}
 
+.photo_info {
+display:none;
+}
+
+.photo_info_image {
+float:left;
+margin-right:10px;
+}
+
+.photo_info_text {
+float:right;
+}
+
+.photo_info_useractions {
+text-align:center;
+margin-top:10px;
+}
+
+.text_red {
+color:red;
+}
+
+.pagination {
+text-align:center;
+margin-bottom:10px;
+margin-top:10px;
+}

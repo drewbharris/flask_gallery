@@ -1,6 +1,11 @@
 {% extends "layout.html" %}
 {% block body %}
-<form action="" method="post">
-	<p><input type="submit" name="delete" value="cancel"><input type="submit" name="delete" value="delete"></p>
-</form>
+
+<div class=gallery_title>delete gallery</div>
+<div class=delete_photo>
+	are you sure you want to delete gallery {{ gallery_name }}?
+	<form action="" method="post">
+		<p><input type="submit" name="delete" value="cancel"><input type="submit" name="delete" value="delete"></p>
+	</form>
+</div>
 {% endblock %}

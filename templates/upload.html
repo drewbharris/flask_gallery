@@ -1,8 +1,11 @@
 {% extends "layout.html" %}
 {% block body %}
-<title>Upload new File</title>
-<h1>Upload new File</h1>
 
+<div class=gallery_title>upload photos</div>
+<div class=gallery_date>
+	currently only accepting jpeg files in a .zip container
+</div>
+<div class=photostream>
 <form action="" method=post enctype=multipart/form-data>
   <p>photo zip:<input type=file name=photos></p>
   <p>gallery:
@@ -10,10 +13,11 @@
 	{% for gallery in galleries %}
 		<option value="{{ gallery.gallery_name }}">{{ gallery.gallery_name }}</option>
 	{% endfor %}
-	<option value="new_gallery">--new gallery--</option>
+	<option value="new_gallery" selected="selected">--new gallery--</option>
   </select>
   </p>
   <p>new gallery name: <input type=text name=new_gallery_name></p>
 	 <input type=submit value=Upload>
 </form>
+</div>
 {% endblock %}
