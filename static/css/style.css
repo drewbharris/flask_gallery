@@ -26,6 +26,7 @@ border-style: none;
 
 html, body {
 height:100%;
+font-family: 'Pontano Sans', sans-serif;
 }
 
 .container {
@@ -87,7 +88,9 @@ height:100px;
 }
 .gallery_list_thumbnail {
 float:left;
+width: 100px;
 margin-right:10px;
+text-align:center;
 }
 
 .gallery_list_info {
@@ -117,15 +120,17 @@ padding-top:5px;
 
 .photo_info {
 display:none;
+width:790px;
 }
 
 .photo_info_image {
 float:left;
-margin-right:10px;
+margin-right:0px;
 }
 
 .photo_info_text {
 float:right;
+margin:0 auto;
 }
 
 .photo_info_useractions {

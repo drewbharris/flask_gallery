@@ -1,29 +1,33 @@
 <!doctype html>
 <head>
-<title>photo gallery {% if session.title %} | {{ session.title }} {% endif %}</title>
+<title>photogallery {% if session.title %} | {{ session.title }} {% endif %}</title>
+<link href='http://fonts.googleapis.com/css?family=Pontano+Sans' rel='stylesheet' type='text/css'>
 <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
 <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='fancybox/jquery.fancybox.css') }}" media="screen" />
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
 <script type="text/javascript" src="{{ url_for('static', filename='fancybox/jquery.fancybox.pack.js') }}"></script>
+<script type=text/javascript>
+  $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+</script>
 </head>
 <body>
 
 <div class=page>
 	<div class=page_title>
-		<span class=heading>photo gallery</span>
+		<span class=heading>photogallery</span>
 		<span class=username>drewbharris</span>
 	</div>
 	<div class=nav>
 		<a href="{{ url_for('index') }}">home</a>
-		&nbsp;&nbsp;&nbsp;
+		&nbsp;&nbsp;
 		{% if not session.logged_in %}
 		<a href="{{ url_for('login') }}">log in</a>
 		{% else %}
 		<a href="{{ url_for('upload') }}">upload</a>
-		&nbsp;&nbsp;&nbsp;
+		&nbsp;&nbsp;
 		<a href="{{ url_for('logout') }}">log out</a>
 		{% endif %}
-		&nbsp;&nbsp;&nbsp;
+		&nbsp;&nbsp;
 		<a href="http://drewbharris.com">drewbharris.com</a>
 		
 	</div>

@@ -1,14 +1,16 @@
 from flask import Flask, request, session, g, redirect, url_for, \
-	 abort, render_template, flash
+	 abort, render_template, flash, jsonify
 from werkzeug import secure_filename
 # config.py must be in the same directory and have the proper fields filled out
 import config, shutil
 from datetime import date
-import sys, subprocess, shlex, glob, Image, os, re, hashlib
+import sys, subprocess, shlex, glob, os, re, hashlib
 from flaskext.sqlalchemy import SQLAlchemy
+from PIL.ExifTags import TAGS
+from PIL import Image
 
 app = Flask(__name__)
-selected_config = config.dev
+selected_config = config.prod
 app.config.from_object(selected_config)
 db = SQLAlchemy(app)
 
@@ -23,7 +25,7 @@ db = SQLAlchemy(app)
 @app.route('/')
 def index():
 	session['title'] = None
-	galleries = Gallery.query.all()
+	galleries = Gallery.query.order_by(Gallery.gallery_name.asc()).all()
 	return render_template('index.html', galleries=galleries)
 
 @app.route('/gallery/<gallery_name>', defaults={'page': 1})
@@ -31,10 +33,8 @@ def index():
 def gallery(gallery_name, page):
 	session['title'] = gallery_name
 	photos = Photo.query.filter_by(gallery_name = gallery_name).order_by(Photo.file_name.asc()).all()
-	if len(photos) == 1:
-		last = True
-	else:
-		last = False
+	
+	photo_count = len(photos)
 	date = Gallery.query.filter_by(gallery_name = gallery_name).first().creation_date
 	paginated_photos = [photos[i:i+10] for i in range(0, len(photos), 10)]
 	try:
@@ -59,7 +59,7 @@ def gallery(gallery_name, page):
 		flash("Could not find specified gallery.")
 		return redirect(url_for('index'))
 	
-	return render_template('gallery.html', gallery_name=gallery_name, photos=requested_photos, date=date, page=page, next=next, prev=prev, last=last)	
+	return render_template('gallery.html', gallery_name=gallery_name, photos=requested_photos, date=date, page=page, next=next, prev=prev, photo_count=photo_count)	
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():
@@ -155,6 +155,21 @@ def logout():
 	session['logged_in'] = False
 	return redirect(url_for('index'))
 	
+#AJAX VIEWS/CONTROLLERS
+#
+
+@app.route('/api/get_photo_info')
+def return_image_data():
+	#do some exif data business here
+	gallery_name = request.args.get('gallery_name', 0, type=str)
+	file_name = request.args.get('file_name', 0, type=str)
+	image_path = os.path.join(selected_config.BASE_DIR,'gallery/',gallery_name,file_name+'.jpg')
+	image = Image.open(image_path)
+	resx,resy = image.size
+	resolution = str(resx)+'x'+str(resy)
+	file_size=get_filesize_readable(image_path)
+	return jsonify(resolution=resolution, file_size=file_size)
+	
 #MODELS
 #
 #
@@ -188,11 +203,13 @@ class Photo(db.Model):
 	file_name = db.Column(db.String(80))
 	gallery_name = db.Column(db.String(80))
 	upload_date = db.Column(db.String(120))
+	orientation = db.Column(db.String(20))
 
-	def __init__(self, file_name, gallery_name, upload_date):
+	def __init__(self, file_name, gallery_name, upload_date, orientation):
 		self.file_name = file_name
 		self.gallery_name = gallery_name
 		self.upload_date = upload_date
+		self.orientation = orientation
 
 	def __repr__(self):
 		return '<Photo %r>' % self.file_name
@@ -236,15 +253,30 @@ def unpack_photos(zip_filename, gallery_name):
 	extracted_files=glob.glob(path)
 
 	#set the thumbnail bounds
-	size = 600, 2000
-	album_thumb_size = 100, 500
+	width = 600
+	album_thumb_width = 100
 	
 	#get the upload date
 	todays_date = date.today().strftime("%d.%m.%Y")
 	
 	#for each file extracted from the zip, generate a thumbnail, save it and insert the entry into the database
-	first_photo = extracted_files[0]
-	generate_album_thumbnail(dest_dir, first_photo, album_thumb_size)
+	#if it's a vertical picture, skip until you find a horizontal picutre
+	#I KNOW it's a hack. i'm not a CSS guy and i'm tired.
+	
+	counter = 0
+	thumbnail_created = False
+	while thumbnail_created == False:
+		if counter == len(extracted_files) - 1:
+			#if they're ALL vertical... whatever, it's just gonna look bad.
+			generate_album_thumbnail(dest_dir, extracted_files[counter], album_thumb_width)
+			break
+		image = Image.open(extracted_files[counter])
+		x, y = image.size
+		if x > y:
+			generate_album_thumbnail(dest_dir, extracted_files[counter], album_thumb_width)
+			break
+		else:
+			counter = counter + 1
 	
 	duplicates_detected = False
 	
@@ -256,8 +288,14 @@ def unpack_photos(zip_filename, gallery_name):
 		
 		if not Photo.query.filter_by(file_name = file_name, gallery_name=gallery_name).first():
 			#if the photo doesn't already exist, in the db, make a thumbnail, save it and add the photo to the db
-			generate_thumbnail(dest_dir, imagePath, size)
-			db.session.add(Photo(file_name, gallery_name, todays_date))
+			generate_thumbnail(dest_dir, imagePath, width)
+			image = Image.open(imagePath)
+			x, y = image.size
+			if x > y:
+				orientation = 'h'
+			else:
+				orientation = 'v'
+			db.session.add(Photo(file_name, gallery_name, todays_date, orientation))
 			db.session.commit()
 		else:
 			duplicates_detected = True
@@ -266,7 +304,7 @@ def unpack_photos(zip_filename, gallery_name):
 		flash('duplicate files were detected and were skipped')
 
 	
-def generate_thumbnail(path, imagePath, size):
+def generate_thumbnail(path, imagePath, width):
 	
 	#split the filename from its extension
 	filename_long = os.path.basename(imagePath)
@@ -274,22 +312,40 @@ def generate_thumbnail(path, imagePath, size):
 	
 	#open the image, create the thumbnail and save it
 	image=Image.open(imagePath)
-	image.thumbnail(size, Image.ANTIALIAS)
+	orig_size = image.size	
+	resize_factor = float(orig_size[0])/float(width)
+	height = int(float(orig_size[1]/float(resize_factor)))
+	image = image.resize((width, height), Image.ANTIALIAS)
 	dest_path = path+'/thumbs/'+filename+'_small.jpg'
 	dest_path = dest_path.encode('ascii')
-	image.save(dest_path)
+	image.save(dest_path, quality=95)
 	
-def generate_album_thumbnail(path, imagePath, size):
+def generate_album_thumbnail(path, imagePath, pixel_limit):
 		
 	#open the image, create the thumbnail and save it
 	image=Image.open(imagePath)
-	image.thumbnail(size, Image.ANTIALIAS)
+	orig_size = image.size	
+	if orig_size[0] > orig_size[1]:
+		resize_factor = float(orig_size[0])/float(pixel_limit)
+		height = int(float(orig_size[1]/float(resize_factor)))
+		width = pixel_limit
+	else:
+		resize_factor = float(orig_size[1])/float(pixel_limit)
+		width = int(float(orig_size[0]/float(resize_factor)))
+		height = pixel_limit
+	image = image.resize((width, height), Image.ANTIALIAS)
 	dest_path = path+'/thumbs/album_thumbnail.jpg'
 	dest_path = dest_path.encode('ascii')
 	image.save(dest_path)
 	
 def hash_password(raw_password):
 	return hashlib.sha224(raw_password).hexdigest()
+	
+def get_filesize_readable(file_path):
+	
+	size = os.path.getsize(file_path)
+	mb = size/(1024*1024.0)
+	return "%0.2f" % (mb)
 
 	
 #SYSTEM FUNCTIONS
@@ -297,6 +353,5 @@ def hash_password(raw_password):
 #
 
 if __name__ == '__main__':
-	app.run()
-
+	app.run(host='0.0.0.0', port=49893)
 

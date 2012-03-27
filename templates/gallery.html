@@ -3,44 +3,58 @@
 
 <div class=gallery_title>{{ gallery_name }}</div>
 <div class=gallery_date>
+	{% if photo_count == 1 %}
+		{{ photo_count }} photo<br>
+	{% else %}
+		{{ photo_count }} photos<br>
+	{% endif %}
 	created {{ date }}
 	<br>
 	{% if session.logged_in %}
 		<a href="{{ url_for('delete_gallery', gallery_name=gallery_name) }}">delete gallery</a>
 	{% endif %}
+	<br>
+<span class=text_red>click photo for more info</span>
 </div>
 
 <div class=photostream>
 	{% for photo in photos %}
-		<div class=photo id=photo_{{ photo.file_name }}>
-			<a class=fancybox href="#photo_info_{{ photo.file_name }}" >
+		<div class=photo>
+			<a class=fancybox href="#photo_info_{{ photo.file_name }}" id=photo_{{ photo.file_name }}>
 				<img src="{{ url_for('static', filename='gallery/'+gallery_name+'/thumbs/'+photo.file_name+'_small.jpg') }}">
 			</a>
 		</div>
 		<div class=photo_info id=photo_info_{{ photo.file_name }}>
 			<div class=photo_info_image>
-				<img src="{{ url_for('static', filename='gallery/'+gallery_name+'/thumbs/'+photo.file_name+'_small.jpg') }}">
+				{% if photo.orientation == 'h' %}
+					<img src="{{ url_for('static', filename='gallery/'+gallery_name+'/thumbs/'+photo.file_name+'_small.jpg') }}">
+				{% else %}
+					<img src="{{ url_for('static', filename='gallery/'+gallery_name+'/thumbs/'+photo.file_name+'_small.jpg') }}" height="550">
+				{% endif %}
 			</div>
 			<div class=photo_info_text>
 				uploaded {{ photo.upload_date }}<br>
 				<div class=photo_info_useractions>
-					<a href="{{ url_for('static', filename='gallery/'+gallery_name+'/'+photo.file_name+'.jpg') }}">
-						click for full resolution
-					</a>
-					<br/>
 					{% if session.logged_in %}
-						{% if last %}
+						{% if photo_count == 1 %}
 							last photo in gallery, cannot delete
 						{% else %}
 							<a href="{{ url_for('delete_image', gallery_name=gallery_name, file_name=photo.file_name) }}">
-								delete
+								delete photo
 							</a>
 						{% endif %}
 					{% endif %}
+					<p/>
+					resolution: <span id=photo_{{ photo.file_name}}_res></span><br>
+					file size: <span id=photo_{{ photo.file_name}}_file_size></span> mb<br>
+					<a href="{{ url_for('static', filename='gallery/'+gallery_name+'/'+photo.file_name+'.jpg') }}">
+						download
+					</a>
 				</div>
 				
 			</div>
 		</div>
+		
 	{% endfor %}
 	<div class=pagination>
 		{% if prev %}
@@ -59,10 +73,25 @@
 <script type="text/javascript">
 	
 $(document).ready(function() {
-	$(".fancybox").fancybox();
+	{% for photo in photos %}
+		$("#photo_{{ photo.file_name }}").fancybox({
+			'beforeLoad': function() { 
+				$.getJSON($SCRIPT_ROOT + '/api/get_photo_info', {
+					gallery_name: '{{ gallery_name }}',
+					file_name: '{{ photo.file_name }}'
+				  }, function(data) {
+					$("#photo_{{ photo.file_name }}_res").text(data.resolution);
+					$("#photo_{{ photo.file_name }}_file_size").text(data.file_size);
+				  });
+				 }
+			
+			});
+	{% endfor %}
 });
+
+
 	
-</script>
+</script>-
 
 {% endblock %}
 
